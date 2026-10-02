@@ -14,11 +14,20 @@ st.set_page_config(
 
 # --- Fungsi Utility & Scraping ---
 def clean_youtube_url(url):
-    if "youtu.be/" in url:
+    """Mendukung format link YouTube HP (Mobile/Shorts/App) & Desktop"""
+    url = url.strip()
+    
+    # 1. Format Shorts
+    if "/shorts/" in url:
+        return url.split("/shorts/")[1].split("?")[0]
+    # 2. Format Singkat App HP (youtu.be)
+    elif "youtu.be/" in url:
         return url.split("youtu.be/")[1].split("?")[0]
+    # 3. Format Mobile Browser (m.youtube.com) / Desktop (www.youtube.com)
     elif "v=" in url:
         return url.split("v=")[1].split("&")[0]
-    return url.strip()
+        
+    return url
 
 def get_youtube_data(url):
     try:
@@ -37,6 +46,7 @@ def get_youtube_data(url):
             raw_data = response.read()
             html_text = raw_data.decode('utf-8', errors='ignore')
             
+            # Ekstraksi Judul
             title = ""
             title_match = re.search(r'<meta property="og:title" content="(.*?)">', html_text)
             if title_match:
@@ -46,6 +56,7 @@ def get_youtube_data(url):
                 if title_match_alt:
                     title = title_match_alt.group(1).replace(" - YouTube", "")
             
+            # Ekstraksi Deskripsi
             description = ""
             desc_match = re.search(r'\"shortDescription\":\"(.*?)\",\"isCrawlable\"', html_text)
             if desc_match:
@@ -81,7 +92,7 @@ def translate_text(text, target_lang):
 st.title("🎬 YouTube Title & Description Translator")
 st.write("Terjemahkan Judul dan Deskripsi Video YouTube secara otomatis dalam berbagai bahasa.")
 
-url_input = st.text_input("Link Video YouTube:", placeholder="https://youtu.be/xxx atau https://www.youtube.com/watch?v=xxx")
+url_input = st.text_input("Link Video YouTube:", placeholder="Tempel link dari YouTube HP atau Desktop di sini...")
 
 languages_dict = {
     "Inggris (English)": "en",
@@ -100,7 +111,7 @@ languages_dict = {
 options = ["⚡ Semua Bahasa (Multi-Translate)"] + list(languages_dict.keys())
 selected_option = st.selectbox("Pilih Bahasa Tujuan:", options)
 
-if st.button("🚀 Terjemahkan Sekarang", type="primary"):
+if st.button("🚀 Terjemahkan Sekarang", type="primary", use_container_width=True):
     if not url_input.strip():
         st.warning("Silakan masukkan link YouTube terlebih dahulu!")
     else:
@@ -123,4 +134,5 @@ if st.button("🚀 Terjemahkan Sekarang", type="primary"):
                         st.code(trans_title, language=None)
                         
                         st.subheader("📝 Deskripsi Hasil Terjemahan")
-                        st.text_area(label="Deskripsi", value=trans_desc, height=300, key=f"desc_{lang_code}")
+                        # Menggunakan st.code agar muncul tombol Copy bawaan di HP/Desktop
+                        st.code(trans_desc, language=None)
